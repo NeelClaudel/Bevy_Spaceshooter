@@ -1,0 +1,30 @@
+[package]
+name = "bevy_combat"
+version = "0.1.0"
+edition = "2018"
+resolver = "2"
+repository = "https://github.com/ElliotB256/bevy_combat"
+homepage = "https://github.com/ElliotB256/bevy_combat"
+description = "A sci-fi battle simulation implemented in the bevy engine."
+readme = "README.md"
+keywords = ["ecs", "bevy", "scifi", "simulation", "battle"]
+license = "MIT"
+authors = ["ElliotB256 <7041164+ElliotB256@users.noreply.github.com>"]
+
+[dependencies]
+rand = "0.8"
+bitflags = "2.4.2"
+multimap = "0.10"
+bevy = "0.13"
+bevy_wasm_window_resize = "0.3.0"
+
+[profile.release]
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.web-release]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"
+lto = true
