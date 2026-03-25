@@ -68,7 +68,7 @@ pub fn update_dieing(dt: Res<GameTimeDelta>, mut query: Query<&mut Dieing>) {
 pub fn dispose_dieing(mut commands: Commands, query: Query<(Entity, &Dieing)>) {
     for (entity, dieing) in query.iter() {
         if dieing.dispose {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }

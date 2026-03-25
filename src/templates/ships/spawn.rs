@@ -53,7 +53,6 @@ pub fn spawn_ships_and_despawn_spawn_commands<T>(
             translation: transform.translation,
             rotation: transform.rotation,
             scale: Vec3::splat(0.5),
-            ..default()
         };
         let created = spawn.spawn(&mut commands, &resources, &mut materials);
         let mut entity_builder = commands.entity(created);

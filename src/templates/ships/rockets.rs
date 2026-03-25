@@ -1,9 +1,6 @@
 //! Rockets and their launchers
 
-use bevy::{
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::prelude::*;
 
 use crate::{
     ai::{
@@ -27,7 +24,7 @@ use super::spawn::{spawn_ships_and_despawn_spawn_commands, SpawnShipTemplate};
 pub struct RocketResources {
     rocket_color: Handle<Image>,
     rocket_mask: Handle<Image>,
-    rocket_mesh: Mesh2dHandle,
+    rocket_mesh: Handle<Mesh>,
 }
 
 #[derive(Component)]
@@ -42,18 +39,15 @@ impl SpawnShipTemplate for RocketSpawner {
         materials: &mut ResMut<Assets<ShipMaterial>>,
     ) -> Entity {
         commands
-            .spawn({
-                MaterialMesh2dBundle {
-                    mesh: resources.rocket_mesh.clone(),
-                    material: materials.add(ShipMaterial {
-                        color: Color::rgba(0.0, 0.0, 1.0, 1.0),
-                        last_damaged_time: 1.0,
-                        base_texture: resources.rocket_color.clone(),
-                        color_mask: resources.rocket_mask.clone(),
-                    }),
-                    ..default()
-                }
-            })
+            .spawn((
+                Mesh2d(resources.rocket_mesh.clone()),
+                MeshMaterial2d(materials.add(ShipMaterial {
+                    color: LinearRgba::new(0.0, 0.0, 1.0, 1.0),
+                    last_damaged_time: 1.0,
+                    base_texture: resources.rocket_color.clone(),
+                    color_mask: resources.rocket_mask.clone(),
+                })),
+            ))
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(10.0),
                 mass: Mass(0.2),
@@ -90,10 +84,7 @@ impl RocketTemplatePlugin {
             rocket_color: assets.load("art/rocket.png"),
             rocket_mask: assets.load("art/rocket_mask.png"),
             rocket_mesh: meshes
-            .add(Mesh::from(Rectangle {
-                half_size: Vec2::new(4.0, 8.0),
-            }))
-            .into(),
+                .add(Mesh::from(Rectangle::new(8.0, 16.0))),
         };
         commands.insert_resource(resources);
     }

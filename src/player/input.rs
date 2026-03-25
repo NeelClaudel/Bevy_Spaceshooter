@@ -63,16 +63,16 @@ pub fn player_target_input(
         return;
     }
 
-    let Ok(window) = windows.get_single() else {
+    let Ok(window) = windows.single() else {
         return;
     };
-    let Ok((camera, cam_transform)) = camera_q.get_single() else {
+    let Ok((camera, cam_transform)) = camera_q.single() else {
         return;
     };
     let Some(cursor_pos) = window.cursor_position() else {
         return;
     };
-    let Some(world_pos) = camera.viewport_to_world_2d(cam_transform, cursor_pos) else {
+    let Ok(world_pos) = camera.viewport_to_world_2d(cam_transform, cursor_pos) else {
         return;
     };
 
@@ -137,7 +137,7 @@ pub fn player_energy_input(
     mut power: ResMut<SystemPower>,
     reactor_q: Query<&ShipReactor, With<Player>>,
 ) {
-    let Ok(reactor) = reactor_q.get_single() else {
+    let Ok(reactor) = reactor_q.single() else {
         return;
     };
 
@@ -221,7 +221,7 @@ pub fn auto_target_nearest_enemy(
     }
 
     // Tick the retarget timer (use real time, works even during pause for responsiveness)
-    auto_target.retarget_timer -= time.delta_seconds();
+    auto_target.retarget_timer -= time.delta_secs();
 
     // If we have a valid living target, don't re-scan until timer expires
     if let Some(current) = player_target.0 {
@@ -235,7 +235,7 @@ pub fn auto_target_nearest_enemy(
     // Time to scan
     auto_target.retarget_timer = AUTO_TARGET_RETARGET_INTERVAL;
 
-    let Ok((player_transform, player_team)) = player_query.get_single() else {
+    let Ok((player_transform, player_team)) = player_query.single() else {
         return;
     };
     let player_pos = player_transform.translation();

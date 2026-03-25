@@ -32,7 +32,7 @@ fn setup(
             asset_server.load("art/small_explosion.png"),
             texture_atlases.add(
                 TextureAtlasLayout::from_grid(
-                Vec2::new(16.0, 16.0),
+                UVec2::new(16, 16),
                 8,
                 1,
                 None,
@@ -43,7 +43,7 @@ fn setup(
         small_muzzle_flare: AnimatedEffectData::new(
             asset_server.load("art/muzzle_flare.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(8.0, 8.0),
+                UVec2::new(8, 8),
                 4,
                 1,
                 None,
@@ -54,7 +54,7 @@ fn setup(
         medium_explosion: AnimatedEffectData::new(
             asset_server.load("art/large_explosion.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(32.0, 32.0),
+                UVec2::new(32, 32),
                 9,
                 1,
                 None,
@@ -65,7 +65,7 @@ fn setup(
         blue_laser_beam: AnimatedEffectData::new(
             asset_server.load("art/laser_blue.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(4.0, 4.0),
+                UVec2::new(4, 4),
                 4,
                 1,
                 None,
@@ -76,7 +76,7 @@ fn setup(
         green_laser_beam: AnimatedEffectData::new(
             asset_server.load("art/laser_green.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(4.0, 4.0),
+                UVec2::new(4, 4),
                 4,
                 1,
                 None,
@@ -87,7 +87,7 @@ fn setup(
         tiny_plus_explosion: AnimatedEffectData::new(
             asset_server.load("art/tiny_plus_explosion.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(8.0, 8.0),
+                UVec2::new(8, 8),
                 5,
                 1,
                 None,
@@ -98,7 +98,7 @@ fn setup(
         smoke1: AnimatedEffectData::new(
             asset_server.load("art/smoke1.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(16.0, 16.0),
+                UVec2::new(16, 16),
                 12,
                 1,
                 None,
@@ -109,7 +109,7 @@ fn setup(
         shield: AnimatedEffectData::new(
             asset_server.load("art/shield2.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(64.0, 64.0),
+                UVec2::new(64, 64),
                 4,
                 1,
                 None,
@@ -120,7 +120,7 @@ fn setup(
         flash_explosion: AnimatedEffectData::new(
             asset_server.load("art/flash_explosion_2.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(16.0, 16.0),
+                UVec2::new(16, 16),
                 6,
                 1,
                 None,
@@ -131,7 +131,7 @@ fn setup(
         big_flash_explosion: AnimatedEffectData::new(
             asset_server.load("art/big_flash_explosion.png"),
             texture_atlases.add(TextureAtlasLayout::from_grid(
-                Vec2::new(64.0, 64.0),
+                UVec2::new(64, 64),
                 10,
                 1,
                 None,
@@ -212,22 +212,24 @@ fn update_animated(
     mut query: Query<(
         Entity,
         &mut AnimationTimer,
-        &mut TextureAtlas,
+        &mut Sprite,
         &mut AnimatedEffect,
     )>,
 ) {
     for (entity, mut timer, mut sprite, mut effect) in query.iter_mut() {
         timer.tick(Duration::from_secs_f32(time.0));
-        if timer.finished() {
-            let layout = texture_atlases.get(sprite.layout.clone()).unwrap();
+        if timer.is_finished() {
+            let atlas = sprite.texture_atlas.as_ref().unwrap();
+            let layout = texture_atlases.get(&atlas.layout).unwrap();
 
             if effect.finished {
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
             }
 
-            if sprite.index < layout.textures.len() - 1 {
+            let atlas_mut = sprite.texture_atlas.as_mut().unwrap();
+            if atlas_mut.index < layout.textures.len() - 1 {
                 //advance the frames.
-                sprite.index += 1;
+                atlas_mut.index += 1;
             } else {
                 effect.finished = true;
             }
@@ -243,7 +245,7 @@ fn create_animated(
 ) {
     for (entity, effect) in query.iter() {
         // despawn the creation command
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
 
         let prefab = match effect.effect {
             AnimatedEffects::SmallExplosion => &prefabs.small_explosion,
@@ -260,22 +262,24 @@ fn create_animated(
 
         // Spawn an effect
         let spawned = commands
-            .spawn(SpriteSheetBundle {
-                atlas: TextureAtlas {
-                    layout: prefab.atlas.clone(),
-                    index: 0
+            .spawn((
+                Sprite {
+                    image: prefab.texture.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: prefab.atlas.clone(),
+                        index: 0,
+                    }),
+                    ..default()
                 },
-                texture: prefab.texture.clone(),
-                transform: effect.transform,
-                ..Default::default()
-            })
+                effect.transform,
+            ))
             .insert(AnimationTimer(Timer::from_seconds(prefab.frame_time, TimerMode::Repeating)))
             .insert(AnimatedEffect::new())
             .id();
 
         // if we have a parent add them.
         if let Some(parent) = effect.parent {
-            commands.entity(parent).push_children(&[spawned]);
+            commands.entity(parent).add_children(&[spawned]);
         }
 
         // hacky for now - add beam tracking if it exists

@@ -32,7 +32,7 @@ pub fn apply_energy_to_stats(
     mut weapon_query: Query<(&mut TargettedTool, &WeaponSlot)>,
 ) {
     let Ok((base_stats, mut shield, mut thrust, mut max_turn, mut evasion)) =
-        player_query.get_single_mut()
+        player_query.single_mut()
     else {
         return;
     };

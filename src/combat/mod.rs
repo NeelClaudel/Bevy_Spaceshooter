@@ -64,7 +64,7 @@ impl Plugin for CombatPlugin {
         app.add_systems(FixedPostUpdate, effects::remove_old_effects);
         app.add_systems(
             PostUpdate,
-            (apply_deferred, mortal::dispose_dieing, apply_deferred).chain(),
+            mortal::dispose_dieing,
         );
     }
 }

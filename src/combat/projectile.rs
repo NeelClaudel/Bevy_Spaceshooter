@@ -107,7 +107,7 @@ pub fn projectiles_apply_effects(mut query: Query<(&mut Effector, &Projectile)>)
 pub fn despawn_projectiles(mut commands: Commands, mut query: Query<(Entity, &Projectile)>) {
     for (entity, projectile) in query.iter_mut() {
         if projectile.reached_target {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }

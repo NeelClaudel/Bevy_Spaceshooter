@@ -100,6 +100,6 @@ pub fn apply_effects(
 /// Deletes old effect entities.
 pub fn remove_old_effects(mut commands: Commands, query: Query<(Entity, &Effect)>) {
     for (entity, _effect) in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }

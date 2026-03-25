@@ -4,7 +4,7 @@ use bevy::{
     asset::AssetMetaCheck,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    sprite::Material2dPlugin,
+    sprite_render::Material2dPlugin,
     winit::{UpdateMode, WinitSettings},
 };
 
@@ -29,7 +29,6 @@ pub struct PrintTimer(Timer);
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(AssetMetaCheck::Never);
     app.add_plugins(
         DefaultPlugins
             .set(bevy::log::LogPlugin {
@@ -46,10 +45,13 @@ fn main() {
                     ..default()
                 }),
                 ..default()
+            })
+            .set(AssetPlugin {
+                meta_check: AssetMetaCheck::Never,
+                ..default()
             }),
     )
-    .add_plugins((LogDiagnosticsPlugin::default(), FrameTimeDiagnosticsPlugin));
-    app.add_plugins(bevy_wasm_window_resize::WindowResizePlugin);
+    .add_plugins((LogDiagnosticsPlugin::default(), FrameTimeDiagnosticsPlugin::default()));
     app.add_plugins((
         BaseGamePlugin,
         AIPlugin,
@@ -74,7 +76,7 @@ fn main() {
     app.add_systems(Update, tick);
     app.add_systems(FixedUpdate, spawn_reinforcements);
     app.insert_resource(WaveTimer(Timer::from_seconds(15.0, TimerMode::Repeating)));
-    app.run()
+    app.run();
 }
 
 fn setup(mut commands: Commands) {
@@ -83,10 +85,10 @@ fn setup(mut commands: Commands) {
     let tile_size = Vec2::splat(16.0);
 
     commands
-        .spawn(Camera2dBundle::default())
+        .spawn(Camera2d)
         .insert(PrintTimer(Timer::from_seconds(1.0, TimerMode::Repeating)));
 
-    commands.insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.15)));
+    commands.insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.15)));
 
     // Player ship at origin
     commands.spawn(SpawnBundle {
@@ -150,7 +152,7 @@ fn spawn_reinforcements(
 ) {
     wave_timer.0.tick(Duration::from_secs_f32(dt.0));
 
-    if wave_timer.0.finished() {
+    if wave_timer.0.is_finished() {
         let mut team_1_count = 0;
         let mut team_2_count = 0;
 

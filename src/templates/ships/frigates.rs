@@ -1,9 +1,6 @@
 //! Fighter templates
 
-use bevy::{
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::prelude::*;
 
 use crate::{
     ai::{
@@ -28,7 +25,7 @@ use super::spawn::{spawn_ships_and_despawn_spawn_commands, SpawnShipTemplate};
 pub struct FrigateResources {
     medium_ship_1_color: Handle<Image>,
     medium_ship_1_mask: Handle<Image>,
-    medium_ship_1_mesh: Mesh2dHandle,
+    medium_ship_1_mesh: Handle<Mesh>,
 }
 
 #[derive(Component)]
@@ -91,18 +88,15 @@ impl SpawnShipTemplate for RocketFrigateSpawner {
             .id();
 
         commands
-            .spawn({
-                MaterialMesh2dBundle {
-                    mesh: resources.medium_ship_1_mesh.clone(),
-                    material: materials.add(ShipMaterial {
-                        color: Color::rgba(0.0, 0.0, 1.0, 1.0),
-                        last_damaged_time: 1.0,
-                        base_texture: resources.medium_ship_1_color.clone(),
-                        color_mask: resources.medium_ship_1_mask.clone(),
-                    }),
-                    ..default()
-                }
-            })
+            .spawn((
+                Mesh2d(resources.medium_ship_1_mesh.clone()),
+                MeshMaterial2d(materials.add(ShipMaterial {
+                    color: LinearRgba::new(0.0, 0.0, 1.0, 1.0),
+                    last_damaged_time: 1.0,
+                    base_texture: resources.medium_ship_1_color.clone(),
+                    color_mask: resources.medium_ship_1_mask.clone(),
+                })),
+            ))
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(3.0),
                 mass: Mass(2.0),
@@ -147,7 +141,7 @@ impl SpawnShipTemplate for RocketFrigateSpawner {
             })
             .insert(CircularHitBox { radius: 28.0 })
             .insert(Evasion::new(0.0))
-            .push_children(&[launcher_left, launcher_right])
+            .add_children(&[launcher_left, launcher_right])
             .id()
     }
 }
@@ -159,10 +153,7 @@ impl FrigateTemplatePlugin {
             medium_ship_1_color: assets.load("art/crab.png"),
             medium_ship_1_mask: assets.load("art/crab_mask.png"),
             medium_ship_1_mesh: meshes
-            .add(Mesh::from(Rectangle {
-                half_size: Vec2::new(32.0, 32.0),
-            }))
-            .into(),
+                .add(Mesh::from(Rectangle::new(64.0, 64.0))),
         };
         commands.insert_resource(resources);
     }

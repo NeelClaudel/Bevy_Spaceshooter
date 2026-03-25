@@ -1,9 +1,6 @@
 //! Player ship template and spawning.
 
-use bevy::{
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::prelude::*;
 
 use crate::{
     combat::{
@@ -37,7 +34,7 @@ use super::constants::energy::REACTOR_MAX_POWER;
 pub struct PlayerShipResources {
     color_texture: Handle<Image>,
     mask_texture: Handle<Image>,
-    mesh: Mesh2dHandle,
+    mesh: Handle<Mesh>,
 }
 
 // ---------------------------------------------------------------------------
@@ -188,16 +185,15 @@ impl SpawnShipTemplate for PlayerShipSpawner {
 
         // --- Player ship body ---
         commands
-            .spawn(MaterialMesh2dBundle {
-                mesh: resources.mesh.clone(),
-                material: materials.add(ShipMaterial {
-                    color: Color::rgba(0.0, 1.0, 0.0, 1.0), // Green for player
+            .spawn((
+                Mesh2d(resources.mesh.clone()),
+                MeshMaterial2d(materials.add(ShipMaterial {
+                    color: LinearRgba::new(0.0, 1.0, 0.0, 1.0), // Green for player
                     last_damaged_time: 1.0,
                     base_texture: resources.color_texture.clone(),
                     color_mask: resources.mask_texture.clone(),
-                }),
-                ..default()
-            })
+                })),
+            ))
             .insert(Player)
             .insert(ShipReactor {
                 max_power: REACTOR_MAX_POWER,
@@ -237,7 +233,7 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 dying_explosion: AnimatedEffects::MediumExplosion,
                 death_explosion: AnimatedEffects::BigFlashExplosion,
             })
-            .push_children(&[turret_0, turret_1, turret_2, turret_3])
+            .add_children(&[turret_0, turret_1, turret_2, turret_3])
             .id()
     }
 }
@@ -259,10 +255,7 @@ impl PlayerShipTemplatePlugin {
             color_texture: assets.load("art/crab.png"),
             mask_texture: assets.load("art/crab_mask.png"),
             mesh: meshes
-                .add(Mesh::from(Rectangle {
-                    half_size: Vec2::new(32.0, 32.0),
-                }))
-                .into(),
+                .add(Mesh::from(Rectangle::new(64.0, 64.0))),
         };
         commands.insert_resource(resources);
     }

@@ -26,6 +26,6 @@ pub fn update_lifetimes(
     }
 
     for entity in expired.iter() {
-        commands.entity(entity).despawn_recursive()
+        commands.entity(entity).despawn()
     }
 }

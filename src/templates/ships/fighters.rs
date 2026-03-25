@@ -1,9 +1,6 @@
 //! Fighter templates
 
-use bevy::{
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::prelude::*;
 
 use crate::{
     ai::{
@@ -28,11 +25,11 @@ use super::spawn::{spawn_ships_and_despawn_spawn_commands, SpawnShipTemplate};
 pub struct FighterResources {
     small_ship_color: Handle<Image>,
     small_ship_mask: Handle<Image>,
-    small_ship_mesh: Mesh2dHandle,
+    small_ship_mesh: Handle<Mesh>,
 
     drone_color: Handle<Image>,
     drone_mask: Handle<Image>,
-    drone_mesh: Mesh2dHandle,
+    drone_mesh: Handle<Mesh>,
 }
 
 #[derive(Component)]
@@ -47,18 +44,15 @@ impl SpawnShipTemplate for DroneSpawner {
         materials: &mut ResMut<Assets<ShipMaterial>>,
     ) -> Entity {
         commands
-            .spawn({
-                MaterialMesh2dBundle {
-                    mesh: resources.drone_mesh.clone(),
-                    material: materials.add(ShipMaterial {
-                        color: Color::rgba(1.0, 0.0, 0.0, 1.0),
-                        last_damaged_time: 1.0,
-                        base_texture: resources.drone_color.clone(),
-                        color_mask: resources.drone_mask.clone(),
-                    }),
-                    ..default()
-                }
-            })
+            .spawn((
+                Mesh2d(resources.drone_mesh.clone()),
+                MeshMaterial2d(materials.add(ShipMaterial {
+                    color: LinearRgba::new(1.0, 0.0, 0.0, 1.0),
+                    last_damaged_time: 1.0,
+                    base_texture: resources.drone_color.clone(),
+                    color_mask: resources.drone_mask.clone(),
+                })),
+            ))
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(4.0),
                 mass: Mass(1.0),
@@ -174,18 +168,15 @@ impl SpawnShipTemplate for SmallShipSpawner {
             .id();
 
         commands
-            .spawn({
-                MaterialMesh2dBundle {
-                    mesh: resources.small_ship_mesh.clone(),
-                    material: materials.add(ShipMaterial {
-                        color: Color::rgba(0.0, 0.0, 1.0, 1.0),
-                        last_damaged_time: 1.0,
-                        base_texture: resources.small_ship_color.clone(),
-                        color_mask: resources.small_ship_mask.clone(),
-                    }),
-                    ..default()
-                }
-            })
+            .spawn((
+                Mesh2d(resources.small_ship_mesh.clone()),
+                MeshMaterial2d(materials.add(ShipMaterial {
+                    color: LinearRgba::new(0.0, 0.0, 1.0, 1.0),
+                    last_damaged_time: 1.0,
+                    base_texture: resources.small_ship_color.clone(),
+                    color_mask: resources.small_ship_mask.clone(),
+                })),
+            ))
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(3.0),
                 mass: Mass(1.0),
@@ -230,7 +221,7 @@ impl SpawnShipTemplate for SmallShipSpawner {
             })
             .insert(CircularHitBox { radius: 15.0 })
             .insert(Evasion::new(0.0))
-            .push_children(&[laser_gun_left, laser_gun_right])
+            .add_children(&[laser_gun_left, laser_gun_right])
             .id()
     }
 }
@@ -242,17 +233,11 @@ impl FighterTemplatePlugin {
             small_ship_color: assets.load("art/smallship.png"),
             small_ship_mask: assets.load("art/smallship_mask.png"),
             small_ship_mesh: meshes
-                .add(Mesh::from(Rectangle {
-                    half_size: Vec2::new(16.0, 16.0),
-                }))
-                .into(),
+                .add(Mesh::from(Rectangle::new(32.0, 32.0))),
             drone_color: assets.load("art/drone.png"),
             drone_mask: assets.load("art/drone_mask.png"),
             drone_mesh: meshes
-                .add(Mesh::from(Rectangle {
-                    half_size: Vec2::new(8.0, 8.0),
-                }))
-                .into(),
+                .add(Mesh::from(Rectangle::new(16.0, 16.0))),
         };
         commands.insert_resource(resources);
     }

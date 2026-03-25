@@ -3,7 +3,27 @@
     "allow": [
       "Bash(cargo build:*)",
       "WebSearch",
-      "WebFetch(domain:bevy.org)"
+      "WebFetch(domain:bevy.org)",
+      "Bash(grep -r 'pub enum ShaderRef' ~/.cargo/registry/src/index.crates.io-*/bevy_render-0.18.1/)",
+      "Bash(grep -r ShaderRef ~/.cargo/registry/src/index.crates.io-*/bevy_render-0.18.1/src/render_resource/mod.rs)",
+      "Bash(grep -rn ShaderRef ~/.cargo/registry/src/index.crates.io-*/bevy_render-0.18.1/src/)",
+      "Bash(grep -rn ShaderRef ~/.cargo/registry/src/index.crates.io-*/bevy_*-0.18.1/src/)",
+      "Bash(grep -rn ShaderRef ~/.cargo/registry/src/index.crates.io-*/bevy-0.18.1/src/)",
+      "Bash(grep -rn Material2d ~/.cargo/registry/src/index.crates.io-*/bevy-0.18.1/src/)",
+      "Bash(grep -rn ShaderRef ~/.cargo/registry/src/index.crates.io-*/bevy_sprite_render-0.18.1/src/mesh2d/material.rs)",
+      "Bash(grep -rn \"ShaderRef\\\\|Material2d\" ~/.cargo/registry/src/index.crates.io-*/bevy_sprite-0.18.1/src/)",
+      "Bash(ls ~/.cargo/registry/src/index.crates.io-*/bevy_sprite-0.18.1/)",
+      "Bash(ls ~/.cargo/registry/src/index.crates.io-*/bevy_sprite_render-0.18.1/src/)",
+      "Bash(grep -rn \"pub use\\\\|Material2d\\\\|ShaderRef\" ~/.cargo/registry/src/index.crates.io-*/bevy_sprite-0.18.1/src/lib.rs)",
+      "Bash(grep -rn \"Material2d\\\\|Material2dPlugin\\\\|ShaderRef\" ~/.cargo/registry/src/index.crates.io-*/bevy_internal-0.18.1/src/)",
+      "Bash(grep -rn Material2d ~/.cargo/registry/src/index.crates.io-*/bevy_sprite_render-0.18.1/src/lib.rs)",
+      "Bash(grep -rn \"pub use\\\\|Material2d\" ~/.cargo/registry/src/index.crates.io-*/bevy_sprite_render-0.18.1/src/mesh2d/mod.rs)",
+      "Bash(grep -rn \"sprite_render\\\\|Material2d\\\\|ShaderRef\" ~/.cargo/registry/src/index.crates.io-*/bevy-0.18.1/Cargo.toml)",
+      "Bash(grep -rn \"sprite_render\\\\|Material2d\\\\|bevy_shader\" ~/.cargo/registry/src/index.crates.io-*/bevy_internal-0.18.1/Cargo.toml)",
+      "Bash(grep -rn \"pub mod\\\\|pub use.*sprite_render\\\\|pub use.*shader\\\\|pub use.*Material2d\" ~/.cargo/registry/src/index.crates.io-*/bevy_internal-0.18.1/src/lib.rs)",
+      "Bash(grep -rn \"Material2d\\\\|ShaderRef\" ~/.cargo/registry/src/index.crates.io-*/bevy_internal-0.18.1/src/prelude.rs)",
+      "Bash(cargo run:*)",
+      "Bash(grep -rn AlphaMode2d C:/Users/utilisateur/.cargo/registry/src/ --include=*.rs)"
     ]
   }
 }

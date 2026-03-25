@@ -9,11 +9,11 @@ pub struct Target(pub Option<Entity>);
 pub struct InheritTargetFromParent;
 
 pub fn copy_targets_from_parents(
-     query: Query<(Entity, &Parent), With<InheritTargetFromParent>>,
+     query: Query<(Entity, &ChildOf), With<InheritTargetFromParent>>,
     mut targetter_query: Query<&mut Target>
 ) {
-    for (entity, parent) in query.iter() {
-        let parent_target = match targetter_query.get(parent.get()) {
+    for (entity, child_of) in query.iter() {
+        let parent_target = match targetter_query.get(child_of.parent()) {
             Ok(opt) => opt.0,
             Err(_) => None
         };
