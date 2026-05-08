@@ -1,11 +1,13 @@
 //! Weapons that can deal damage.
 //!
 
+pub mod gatling;
+
 use bevy::prelude::*;
 
 use crate::{
     combat::{attack::Attack, damage::Damage},
-    fx::{beams::BeamStyle, HitEffect},
+    fx::{animated::AnimatedEffects, beams::BeamStyle, muzzle::MuzzleFlareEmitter, HitEffect},
 };
 
 /// The attack from a small pulsed laser.
@@ -15,12 +17,13 @@ pub fn pulse_laser_attack(commands: &mut Commands) -> Entity {
             Attack::new(3.0),
             Damage::new(20.0),
             BeamStyle {
-                effect: crate::fx::animated::AnimatedEffects::BlueLaserBeam,
+                effect: AnimatedEffects::BlueLaserBeam,
                 width: 1.0,
             },
             HitEffect {
-                effect: crate::fx::animated::AnimatedEffects::SmallExplosion,
+                effect: AnimatedEffects::SmallExplosion,
             },
+            MuzzleFlareEmitter { effect: AnimatedEffects::MuzzleFlare },
         ))
         .id()
 }
@@ -31,12 +34,13 @@ pub fn small_pulse_laser_attack(commands: &mut Commands) -> Entity {
             Attack::new(2.0),
             Damage::new(2.0),
             BeamStyle {
-                effect: crate::fx::animated::AnimatedEffects::GreenLaserBeam,
+                effect: AnimatedEffects::GreenLaserBeam,
                 width: 0.5,
             },
             HitEffect {
-                effect: crate::fx::animated::AnimatedEffects::TinyPlusExplosion,
+                effect: AnimatedEffects::TinyPlusExplosion,
             },
+            MuzzleFlareEmitter { effect: AnimatedEffects::MuzzleFlare },
         ))
         .id()
 }
@@ -47,7 +51,7 @@ pub fn small_rocket_attack(commands: &mut Commands) -> Entity {
             Attack::new(10.0),
             Damage::new(15.0),
             HitEffect {
-                effect: crate::fx::animated::AnimatedEffects::FlashExplosion,
+                effect: AnimatedEffects::FlashExplosion,
             },
         ))
         .id()

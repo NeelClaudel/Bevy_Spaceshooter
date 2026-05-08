@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::{
     asset::AssetMetaCheck,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    post_process::bloom::Bloom,
     prelude::*,
     sprite_render::Material2dPlugin,
     winit::{UpdateMode, WinitSettings},
@@ -58,13 +59,19 @@ fn main() {
         MovementPlugin,
         PlayerPlugin,
         bevy_combat::combat::CombatPlugin,
+        bevy_combat::combat::ballistic::BallisticPlugin,
         bevy_combat::fx::animated::AnimatedEffectsPlugin,
         bevy_combat::fx::EffectsPlugin,
         bevy_combat::fx::beams::BeamEffectPlugin,
+        bevy_combat::fx::muzzle::MuzzleFlarePlugin,
+        bevy_combat::fx::starfield::StarfieldPlugin,
         Material2dPlugin::<ShipMaterial>::default(),
         bevy_combat::templates::ships::fighters::FighterTemplatePlugin,
         bevy_combat::templates::ships::frigates::FrigateTemplatePlugin,
         bevy_combat::templates::ships::rockets::RocketTemplatePlugin,
+    ));
+    app.add_plugins((
+        bevy_combat::templates::weapons::gatling::GatlingTemplatePlugin,
     ));
 
     app.insert_resource(WinitSettings {
@@ -85,10 +92,10 @@ fn setup(mut commands: Commands) {
     let tile_size = Vec2::splat(16.0);
 
     commands
-        .spawn(Camera2d)
+        .spawn((Camera2d, Bloom::default()))
         .insert(PrintTimer(Timer::from_seconds(1.0, TimerMode::Repeating)));
 
-    commands.insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.15)));
+    commands.insert_resource(ClearColor(Color::BLACK));
 
     // Player ship at origin
     commands.spawn(SpawnBundle {

@@ -23,7 +23,12 @@
       "Bash(grep -rn \"pub mod\\\\|pub use.*sprite_render\\\\|pub use.*shader\\\\|pub use.*Material2d\" ~/.cargo/registry/src/index.crates.io-*/bevy_internal-0.18.1/src/lib.rs)",
       "Bash(grep -rn \"Material2d\\\\|ShaderRef\" ~/.cargo/registry/src/index.crates.io-*/bevy_internal-0.18.1/src/prelude.rs)",
       "Bash(cargo run:*)",
-      "Bash(grep -rn AlphaMode2d C:/Users/utilisateur/.cargo/registry/src/ --include=*.rs)"
+      "Bash(grep -rn AlphaMode2d C:/Users/utilisateur/.cargo/registry/src/ --include=*.rs)",
+      "Bash(find 'D:/Bevy Games/Bevy/bevy_space_combat-master/bevy_space_combat-master/assets' -type f -name *.png)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"half_size\\\\|Rectangle\" src/**/*.rs)",
+      "Bash(cargo check *)",
+      "Bash(cargo clippy *)"
     ]
   }
 }

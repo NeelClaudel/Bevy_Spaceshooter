@@ -4,6 +4,8 @@ pub mod animated;
 pub mod beams;
 pub mod damage_flash;
 pub mod death;
+pub mod muzzle;
+pub mod starfield;
 
 use bevy::prelude::*;
 use rand::Rng;

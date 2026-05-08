@@ -56,7 +56,7 @@ impl SpawnShipTemplate for DroneSpawner {
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(4.0),
                 mass: Mass(1.0),
-                thrust: Thrust(250.0),
+                thrust: Thrust(125.0),
                 ..Default::default()
             })
             .insert(IdleBehavior)
@@ -88,7 +88,7 @@ impl SpawnShipTemplate for DroneSpawner {
             .insert((
                 crate::combat::tools::Cooldown::new(0.12),
                 crate::combat::tools::TargettedTool {
-                    range: 80.0,
+                    range: 200.0,
                     cone: 0.3,
                     armed: true,
                     firing: false,
@@ -133,7 +133,7 @@ impl SpawnShipTemplate for SmallShipSpawner {
             .insert((
                 crate::combat::tools::Cooldown::new(1.0),
                 crate::combat::tools::TargettedTool {
-                    range: 100.0,
+                    range: 250.0,
                     cone: 0.15,
                     armed: true,
                     firing: false,
@@ -156,7 +156,7 @@ impl SpawnShipTemplate for SmallShipSpawner {
             .insert((
                 crate::combat::tools::Cooldown::new(1.0),
                 crate::combat::tools::TargettedTool {
-                    range: 100.0,
+                    range: 250.0,
                     cone: 0.15,
                     armed: true,
                     firing: false,
@@ -180,7 +180,7 @@ impl SpawnShipTemplate for SmallShipSpawner {
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(3.0),
                 mass: Mass(1.0),
-                thrust: Thrust(150.0),
+                thrust: Thrust(75.0),
                 ..default()
             })
             .insert(IdleBehavior)

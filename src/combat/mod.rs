@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 pub mod attack;
+pub mod ballistic;
 pub mod damage;
 pub mod effects;
 pub mod evasion;

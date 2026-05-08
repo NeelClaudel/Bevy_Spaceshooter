@@ -51,7 +51,10 @@ pub fn update_cooldowns(dt: Res<GameTimeDelta>, mut query: Query<&mut Cooldown>)
 }
 
 pub fn fire_targetted_tools(
-    mut query: Query<(&mut Cooldown, &mut TargettedTool, &Target, &GlobalTransform)>,
+    mut query: Query<
+        (&mut Cooldown, &mut TargettedTool, &Target, &GlobalTransform),
+        Without<crate::player::PlayerWeapon>,
+    >,
     pos_query: Query<&GlobalTransform>,
 ) {
     for (mut cooldown, mut tool, target, transform) in query.iter_mut() {

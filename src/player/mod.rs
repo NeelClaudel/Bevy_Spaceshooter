@@ -6,8 +6,10 @@ pub mod camera;
 pub mod constants;
 pub mod energy;
 pub mod hud;
+pub mod indicators;
 pub mod input;
 pub mod ship_template;
+pub mod weapon_panel;
 
 use constants::energy as energy_consts;
 
@@ -42,6 +44,43 @@ pub struct WeaponSlot {
     /// Whether the weapon currently has power.
     pub powered: bool,
 }
+
+/// Mouse-button group a player turret responds to.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum PlayerWeaponGroup {
+    /// Left-click: lasers, flak — anything that fires immediately.
+    Primary,
+    /// Right-click: missiles. Requires a locked target.
+    Missile,
+}
+
+/// Marker placed on every player turret. Carries the input group it listens to.
+/// Used to opt player turrets out of the generic auto-fire system in combat::tools.
+#[derive(Component)]
+pub struct PlayerWeapon {
+    pub group: PlayerWeaponGroup,
+}
+
+/// Present on Primary turrets that fire ballistic projectiles instead of hitscan.
+/// Absence on a Primary turret means it uses hitscan (lasers/flak).
+#[derive(Component, Copy, Clone)]
+pub struct BallisticConfig {
+    pub bullet_speed: f32,
+    /// Random aim jitter in radians, applied symmetrically (±spread).
+    pub spread: f32,
+    pub damage: f32,
+    pub accuracy: f32,
+}
+
+/// Display label for a weapon turret. Shown in the weapon panel UI.
+#[derive(Component, Clone)]
+pub struct WeaponName(pub &'static str);
+
+/// User-controlled enable flag for a turret. When false, the turret will not be
+/// armed (and therefore won't fire) regardless of its power state. Toggled by
+/// the weapon panel UI.
+#[derive(Component, Copy, Clone)]
+pub struct WeaponEnabled(pub bool);
 
 /// Ammunition for weapons that consume ammo (e.g. missiles).
 #[derive(Component)]
@@ -101,29 +140,34 @@ impl Default for SystemPower {
     }
 }
 
-/// Whether the player has toggled "hold fire" (suppress all weapons).
-#[derive(Resource)]
-pub struct HoldFire(pub bool);
+/// Whether weapons fire automatically when a target is locked.
+/// Off by default — combat is now driven by mouse buttons.
+#[derive(Resource, Default)]
+pub struct AutoFire(pub bool);
 
-impl Default for HoldFire {
-    fn default() -> Self {
-        HoldFire(false)
-    }
+/// Per-frame mouse-button state, sampled from MouseButton::Left/Right.
+/// Read by the player firing system to decide which weapon group fires this tick.
+#[derive(Resource, Default)]
+pub struct PlayerFireInput {
+    pub primary_held: bool,
+    pub missile_held: bool,
 }
 
-/// Whether turrets automatically target the nearest enemy.
+/// World-space cursor position. None when cursor is offscreen or no window.
+/// Updated each frame from window cursor + camera viewport_to_world_2d.
+#[derive(Resource, Default)]
+pub struct CursorWorldPos(pub Option<Vec2>);
+
+/// Mouse-wheel-driven camera zoom. Smaller scale = zoomed in.
 #[derive(Resource)]
-pub struct AutoTarget {
-    pub enabled: bool,
-    /// Timer for periodic re-scanning (avoids switching targets every frame).
-    pub retarget_timer: f32,
+pub struct CameraZoom {
+    pub target_scale: f32,
 }
 
-impl Default for AutoTarget {
+impl Default for CameraZoom {
     fn default() -> Self {
-        AutoTarget {
-            enabled: true, // ON by default
-            retarget_timer: 0.0,
+        CameraZoom {
+            target_scale: constants::controls::CAMERA_ZOOM_DEFAULT,
         }
     }
 }
@@ -140,24 +184,38 @@ impl Plugin for PlayerPlugin {
         app.init_resource::<PlayerTarget>();
         app.init_resource::<GamePaused>();
         app.init_resource::<SystemPower>();
-        app.init_resource::<HoldFire>();
-        app.init_resource::<AutoTarget>();
+        app.init_resource::<AutoFire>();
+        app.init_resource::<PlayerFireInput>();
+        app.init_resource::<CursorWorldPos>();
+        app.init_resource::<CameraZoom>();
 
         // Ship template plugin (spawning)
         app.add_plugins(ship_template::PlayerShipTemplatePlugin);
+
+        // Targeting indicators (lock ring + hover ring)
+        app.add_plugins(indicators::IndicatorsPlugin);
+
+        // Weapon panel UI (top-right, below target info)
+        app.add_plugins(weapon_panel::WeaponPanelPlugin);
 
         // Input systems (run every frame in Update)
         app.add_systems(
             Update,
             (
-                input::player_movement_input,
-                input::player_target_input,
-                input::player_pause_input,
-                input::player_speed_input,
-                input::player_energy_input,
-                input::player_hold_fire_input,
-                input::player_auto_target_toggle,
-                input::auto_target_nearest_enemy,
+                (
+                    input::player_movement_input,
+                    input::player_pause_input,
+                    input::player_speed_input,
+                    input::player_zoom_input,
+                ),
+                (
+                    input::player_energy_input,
+                    input::player_auto_fire_input,
+                    input::player_lock_target_input,
+                    input::player_mouse_fire_input,
+                    input::update_cursor_world_pos,
+                    input::clear_dead_target_lock,
+                ),
             ),
         );
 
@@ -166,6 +224,27 @@ impl Plugin for PlayerPlugin {
 
         // Energy effects (FixedUpdate, before combat systems)
         app.add_systems(FixedUpdate, energy::apply_energy_to_stats);
+
+        // Missiles use the standard Effector path; runs before tools_activate_effectors
+        // so its tool.firing flag is consumed this tick.
+        app.add_systems(
+            FixedUpdate,
+            input::player_fire_missiles
+                .after(crate::combat::tools::update_cooldowns)
+                .after(crate::combat::targets::copy_targets_from_parents)
+                .before(crate::combat::tools::tools_activate_effectors),
+        );
+
+        // Primary weapons use cursor hitscan and bypass the Effector path —
+        // they spawn the effect entity manually so they can target enemies
+        // chosen by ray rather than the inherited PlayerTarget. Run before
+        // determine_missed_attacks so the manual Miss result sticks.
+        app.add_systems(
+            FixedUpdate,
+            input::player_primary_fire
+                .after(crate::combat::tools::update_cooldowns)
+                .before(crate::combat::evasion::determine_missed_attacks),
+        );
 
         // HUD
         app.add_systems(Startup, hud::spawn_hud);

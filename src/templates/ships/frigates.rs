@@ -52,7 +52,7 @@ impl SpawnShipTemplate for RocketFrigateSpawner {
             .insert((
                 crate::combat::tools::Cooldown::new(0.6),
                 crate::combat::tools::TargettedTool {
-                    range: 500.0,
+                    range: 700.0,
                     cone: 2.0*std::f32::consts::PI,
                     armed: true,
                     firing: false,
@@ -75,7 +75,7 @@ impl SpawnShipTemplate for RocketFrigateSpawner {
             .insert((
                 crate::combat::tools::Cooldown::new(0.6),
                 crate::combat::tools::TargettedTool {
-                    range: 500.0,
+                    range: 700.0,
                     cone: 2.0*std::f32::consts::PI,
                     armed: true,
                     firing: false,
@@ -100,7 +100,7 @@ impl SpawnShipTemplate for RocketFrigateSpawner {
             .insert(MovementBundle {
                 max_turn_speed: MaxTurnSpeed::new(3.0),
                 mass: Mass(2.0),
-                thrust: Thrust(200.0),
+                thrust: Thrust(100.0),
                 ..default()
             })
             .insert(IdleBehavior)

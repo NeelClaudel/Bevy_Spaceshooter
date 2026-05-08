@@ -12,7 +12,7 @@ use crate::{
     combat::{
         damage::LastDamageTimer, effects::Effector, evasion::Evasion, lifetime::Lifetime, mortal::{Health, MaxHealth, Mortal}, projectile::{Homing, Projectile}, CombatSystems
     },
-    fx::{animated::AnimatedEffects, death::DeathEffect},
+    fx::{animated::AnimatedEffects, death::DeathEffect, muzzle::MuzzleFlareEmitter},
     materials::ShipMaterial,
     movement::{Mass, MaxTurnSpeed, MovementBundle, Thrust},
 };
@@ -104,8 +104,9 @@ impl Plugin for RocketTemplatePlugin {
 
 pub fn small_rocket_launcher(commands: &mut Commands) -> Entity {
     commands
-        .spawn(
-            RocketSpawner
-        )
+        .spawn((
+            RocketSpawner,
+            MuzzleFlareEmitter { effect: AnimatedEffects::MuzzleFlare },
+        ))
         .id()
 }

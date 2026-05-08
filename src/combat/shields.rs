@@ -30,10 +30,14 @@ pub fn shield_absorb_damage(
         &SourceTransform,
         &mut EffectLocation,
         &mut Attack,
+        Option<&super::effects::Instigator>,
     )>,
     mut shields_query: Query<(&mut Shield, &GlobalTransform)>,
+    instigator_transforms: Query<&GlobalTransform>,
 ) {
-    for (mut damage, target, source_t, mut hit_loc, mut attack) in attacks_query.iter_mut() {
+    for (mut damage, target, source_t, mut hit_loc, mut attack, instigator_opt) in
+        attacks_query.iter_mut()
+    {
         // does attack target have a shield?
         if target.0.is_none() {
             continue;
@@ -47,8 +51,17 @@ pub fn shield_absorb_damage(
         if let Ok((mut shield, shield_transform)) =
             shields_query.get_mut(target.0.expect("target is none"))
         {
-            // if attack from within shield radius, no protection given:
-            let delta = source_t.0.translation() - hit_loc.0;
+            // Use the original instigator's position (the ship that fired) if available,
+            // otherwise fall back to the effect source. This prevents projectiles from
+            // bypassing shields just because they detonated inside the shield radius.
+            let attacker_pos = instigator_opt
+                .and_then(|ins| instigator_transforms.get(ins.0).ok())
+                .map(|t| t.translation())
+                .unwrap_or_else(|| source_t.0.translation());
+
+            let delta = attacker_pos - hit_loc.0;
+
+            // if attacker is within shield radius, no protection given:
             if delta.length_squared() < shield.radius.powi(2) {
                 continue;
             }

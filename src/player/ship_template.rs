@@ -23,7 +23,10 @@ use crate::{
 
 use super::constants::player_ship::*;
 use super::constants::weapons::*;
-use super::{Ammunition, Player, PlayerBaseStats, ShipReactor, WeaponSlot};
+use super::{
+    Ammunition, BallisticConfig, Player, PlayerBaseStats, PlayerWeapon, PlayerWeaponGroup,
+    ShipReactor, WeaponEnabled, WeaponName, WeaponSlot,
+};
 use super::constants::energy::REACTOR_MAX_POWER;
 
 // ---------------------------------------------------------------------------
@@ -82,6 +85,9 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 power_cost: PULSE_LASER_POWER_COST,
                 powered: true,
             })
+            .insert(PlayerWeapon { group: PlayerWeaponGroup::Primary })
+            .insert(WeaponName("Pulse Top"))
+            .insert(WeaponEnabled(true))
             .id();
 
         // --- Turret 1: Side-left flak cannon ---
@@ -114,6 +120,9 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 power_cost: FLAK_POWER_COST,
                 powered: true,
             })
+            .insert(PlayerWeapon { group: PlayerWeaponGroup::Primary })
+            .insert(WeaponName("Flak Left"))
+            .insert(WeaponEnabled(true))
             .id();
 
         // --- Turret 2: Side-right missile launcher ---
@@ -150,6 +159,9 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 current: MISSILE_START_AMMO,
                 max: MISSILE_MAX_AMMO,
             })
+            .insert(PlayerWeapon { group: PlayerWeaponGroup::Missile })
+            .insert(WeaponName("Missiles"))
+            .insert(WeaponEnabled(true))
             .id();
 
         // --- Turret 3: Front-bottom pulse laser ---
@@ -181,6 +193,50 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 power_cost: PULSE_LASER_POWER_COST,
                 powered: true,
             })
+            .insert(PlayerWeapon { group: PlayerWeaponGroup::Primary })
+            .insert(WeaponName("Pulse Bot"))
+            .insert(WeaponEnabled(true))
+            .id();
+
+        // --- Turret 4: Center gatling (ballistic) ---
+        // Has no Effector — player_primary_fire spawns bullets directly via
+        // GatlingResources when it sees a BallisticConfig on a Primary turret.
+        let turret_4 = commands
+            .spawn((
+                Transform {
+                    translation: Vec3::new(
+                        TURRET_CENTER_OFFSET[0],
+                        TURRET_CENTER_OFFSET[1],
+                        0.0,
+                    ),
+                    ..default()
+                },
+                GlobalTransform::default(),
+            ))
+            .insert((Target::default(), InheritTargetFromParent))
+            .insert((
+                Cooldown::new(GATLING_COOLDOWN),
+                TargettedTool {
+                    range: GATLING_RANGE,
+                    cone: GATLING_CONE,
+                    armed: true,
+                    firing: false,
+                },
+            ))
+            .insert(WeaponSlot {
+                index: 4,
+                power_cost: GATLING_POWER_COST,
+                powered: true,
+            })
+            .insert(PlayerWeapon { group: PlayerWeaponGroup::Primary })
+            .insert(BallisticConfig {
+                bullet_speed: GATLING_BULLET_SPEED,
+                spread: GATLING_SPREAD,
+                damage: GATLING_DAMAGE,
+                accuracy: GATLING_ACCURACY,
+            })
+            .insert(WeaponName("Gatling"))
+            .insert(WeaponEnabled(true))
             .id();
 
         // --- Player ship body ---
@@ -233,7 +289,7 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 dying_explosion: AnimatedEffects::MediumExplosion,
                 death_explosion: AnimatedEffects::BigFlashExplosion,
             })
-            .add_children(&[turret_0, turret_1, turret_2, turret_3])
+            .add_children(&[turret_0, turret_1, turret_2, turret_3, turret_4])
             .id()
     }
 }
@@ -251,9 +307,8 @@ impl PlayerShipTemplatePlugin {
         mut meshes: ResMut<Assets<Mesh>>,
     ) {
         let resources = PlayerShipResources {
-            // Reuse the crab (frigate) art for V1
-            color_texture: assets.load("art/crab.png"),
-            mask_texture: assets.load("art/crab_mask.png"),
+            color_texture: assets.load("spaceships_no_bloom/16.png"),
+            mask_texture: assets.load("spaceships_no_bloom/16.png"),
             mesh: meshes
                 .add(Mesh::from(Rectangle::new(64.0, 64.0))),
         };

@@ -1,11 +1,11 @@
 //! Energy system constants - tweak these to balance power management.
 
 // --- Reactor ---
-pub const REACTOR_MAX_POWER: u32 = 10;
+pub const REACTOR_MAX_POWER: u32 = 12;
 
 // --- Default allocation ---
 pub const DEFAULT_SHIELD_POWER: u32 = 4;
-pub const DEFAULT_WEAPON_POWER: u32 = 3;
+pub const DEFAULT_WEAPON_POWER: u32 = 5;
 pub const DEFAULT_ENGINE_POWER: u32 = 3;
 
 // --- Max levels per system (upgradeable cap) ---

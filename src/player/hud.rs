@@ -7,7 +7,7 @@ use crate::combat::shields::{MaxShieldHP, Shield};
 use crate::game::GameSpeed;
 
 use super::constants::hud::*;
-use super::{AutoTarget, GamePaused, HoldFire, Player, PlayerTarget, SystemPower};
+use super::{AutoFire, GamePaused, Player, PlayerTarget, SystemPower};
 
 // ---------------------------------------------------------------------------
 // Marker components for updatable HUD elements
@@ -294,8 +294,7 @@ pub fn update_target_info(
 pub fn update_game_speed_text(
     speed: Res<GameSpeed>,
     paused: Res<GamePaused>,
-    auto_target: Res<AutoTarget>,
-    hold_fire: Res<HoldFire>,
+    auto_fire: Res<AutoFire>,
     mut text_q: Query<&mut Text, With<GameSpeedText>>,
 ) {
     let Ok(mut text) = text_q.single_mut() else {
@@ -308,17 +307,11 @@ pub fn update_game_speed_text(
         format!("Speed: x{:.2}", speed.0)
     };
 
-    let auto_str = if auto_target.enabled {
-        "[T] Auto-Target: ON"
+    let fire_str = if auto_fire.0 {
+        "[F] AUTO-FIRE: ON"
     } else {
-        "[T] Auto-Target: OFF"
+        "[F] AUTO-FIRE: OFF"
     };
 
-    let fire_str = if hold_fire.0 {
-        " | [F] HOLD FIRE"
-    } else {
-        ""
-    };
-
-    **text = format!("{} | {}{}", speed_str, auto_str, fire_str);
+    **text = format!("{} | {} | [T] LOCK HOVERED", speed_str, fire_str);
 }

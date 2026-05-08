@@ -9,7 +9,7 @@ use crate::game::GameTimeDelta;
 use crate::movement::{MaxTurnSpeed, Thrust};
 
 use super::constants::energy::*;
-use super::{HoldFire, Player, PlayerBaseStats, SystemPower, WeaponSlot};
+use super::{Player, PlayerBaseStats, SystemPower, WeaponEnabled, WeaponSlot};
 
 /// Applies energy allocation effects each fixed tick:
 /// - Shields: regen + max HP scaling
@@ -17,7 +17,6 @@ use super::{HoldFire, Player, PlayerBaseStats, SystemPower, WeaponSlot};
 /// - Weapons: toggle `armed` on turrets based on power budget
 pub fn apply_energy_to_stats(
     power: Res<SystemPower>,
-    hold_fire: Res<HoldFire>,
     dt: Res<GameTimeDelta>,
     mut player_query: Query<
         (
@@ -29,7 +28,7 @@ pub fn apply_energy_to_stats(
         ),
         With<Player>,
     >,
-    mut weapon_query: Query<(&mut TargettedTool, &WeaponSlot)>,
+    mut weapon_query: Query<(&mut TargettedTool, &mut WeaponSlot, &WeaponEnabled)>,
 ) {
     let Ok((base_stats, mut shield, mut thrust, mut max_turn, mut evasion)) =
         player_query.single_mut()
@@ -53,17 +52,20 @@ pub fn apply_energy_to_stats(
     // --- Weapons: power budget determines which are armed ---
     let weapon_budget = power.weapons.current;
 
-    // Collect weapon slots, sort by index, allocate power
-    let mut slots: Vec<(Entity, u32, u32)> = weapon_query
+    // Allocate power in slot-index order, but only to *enabled* turrets.
+    // Disabled turrets are skipped — their cells go to lower-priority turrets.
+    // This makes the WeaponEnabled toggle a real power-management tool: turn off
+    // a weapon you don't need to free its cells for one further down the list.
+    let mut slots: Vec<(u32, u32, bool)> = weapon_query
         .iter()
-        .map(|(_, ws)| (Entity::PLACEHOLDER, ws.index, ws.power_cost))
+        .map(|(_, ws, enabled)| (ws.index, ws.power_cost, enabled.0))
         .collect();
-    slots.sort_by_key(|s| s.1);
+    slots.sort_by_key(|s| s.0);
 
     let mut remaining = weapon_budget;
     let mut powered_indices: Vec<(u32, bool)> = Vec::new();
-    for (_, index, cost) in &slots {
-        if remaining >= *cost {
+    for (index, cost, enabled) in &slots {
+        if *enabled && remaining >= *cost {
             remaining -= cost;
             powered_indices.push((*index, true));
         } else {
@@ -71,14 +73,15 @@ pub fn apply_energy_to_stats(
         }
     }
 
-    // Apply powered state + hold fire
-    for (mut tool, ws) in weapon_query.iter_mut() {
-        let should_be_powered = powered_indices
+    // Apply powered + enabled state. `armed` requires both; the weapon panel
+    // toggles `enabled`, the energy budget controls `powered`.
+    for (mut tool, mut ws, enabled) in weapon_query.iter_mut() {
+        let powered = powered_indices
             .iter()
             .find(|(idx, _)| *idx == ws.index)
             .map(|(_, p)| *p)
             .unwrap_or(false);
-
-        tool.armed = should_be_powered && !hold_fire.0;
+        ws.powered = powered;
+        tool.armed = powered && enabled.0;
     }
 }
