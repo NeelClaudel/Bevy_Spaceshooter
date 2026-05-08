@@ -72,6 +72,7 @@ fn main() {
     ));
     app.add_plugins((
         bevy_combat::templates::weapons::gatling::GatlingTemplatePlugin,
+        bevy_combat::fx::thruster::ThrusterPlugin,
     ));
 
     app.insert_resource(WinitSettings {

@@ -6,27 +6,39 @@ use bevy::ecs::message::MessageReader;
 
 use crate::combat::attack::{Attack, AttackResult};
 use crate::combat::effects::{Effect, EffectLocation, Effectiveness, Effector, Instigator, SourceTransform};
+use crate::combat::mortal::Dieing;
 use crate::combat::projectile::CircularHitBox;
 use crate::combat::tools::{Cooldown, TargettedTool};
 use crate::combat::{Target, Team};
-use crate::game::GameSpeed;
-use crate::movement::{MaxSpeed, MaxTurnSpeed, Speed, TurnSpeed};
+use crate::game::{GameSpeed, GameTimeDelta};
+use crate::math_util;
+use crate::movement::{Heading, MaxSpeed, MaxTurnSpeed, Speed, TurnSpeed, Velocity};
 
 use super::constants::controls::*;
 use super::indicators::HoveredEntity;
 use super::{
     Ammunition, AutoFire, BallisticConfig, CameraZoom, CursorWorldPos, GamePaused, Player,
-    PlayerFireInput, PlayerTarget, PlayerWeapon, PlayerWeaponGroup, ShipReactor, SystemPower,
+    PlayerFireInput, PlayerLocalVelocity, PlayerTarget, PlayerWeapon, PlayerWeaponGroup,
+    ShipReactor, SystemPower,
 };
 use crate::templates::weapons::gatling::{spawn_gatling_bullet, GatlingResources};
 use rand::Rng;
 
-/// WASD movement: W=forward, S=reverse, A=turn left, D=turn right.
+/// Twin-stick movement: W=thrust forward, S=thrust back, A=strafe left,
+/// D=strafe right (all ship-relative). Rotation is handled by
+/// `player_aim_at_cursor`. Velocity persists in `PlayerLocalVelocity` so it
+/// decays smoothly when no key is held.
 pub fn player_movement_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     paused: Res<GamePaused>,
     mut query: Query<
-        (&mut TurnSpeed, &MaxTurnSpeed, &mut Speed, &MaxSpeed),
+        (
+            &Transform,
+            &MaxSpeed,
+            &mut PlayerLocalVelocity,
+            &mut Speed,
+            &mut Velocity,
+        ),
         With<Player>,
     >,
 ) {
@@ -34,29 +46,74 @@ pub fn player_movement_input(
         return;
     }
 
-    for (mut turn_speed, max_turn, mut speed, max_speed) in query.iter_mut() {
-        // Turning
-        let mut turn = 0.0;
-        if keyboard.pressed(KeyCode::KeyA) {
-            turn += max_turn.radians_per_second;
-        }
-        if keyboard.pressed(KeyCode::KeyD) {
-            turn -= max_turn.radians_per_second;
-        }
-        turn_speed.radians_per_second = turn;
-
-        // Thrust
+    for (transform, max_speed, mut local_vel, mut speed, mut velocity) in query.iter_mut() {
+        let mut input = Vec2::ZERO;
         if keyboard.pressed(KeyCode::KeyW) {
-            speed.0 = max_speed.0;
+            input.y = 1.0;
         } else if keyboard.pressed(KeyCode::KeyS) {
-            speed.0 = -max_speed.0 * REVERSE_SPEED_FRACTION;
+            input.y = -REVERSE_SPEED_FRACTION;
+        }
+        if keyboard.pressed(KeyCode::KeyA) {
+            input.x = -1.0;
+        } else if keyboard.pressed(KeyCode::KeyD) {
+            input.x = 1.0;
+        }
+        // Cap diagonal magnitude so W+D isn't √2× faster than W alone.
+        if input.length_squared() > 1.0 {
+            input = input.normalize();
+        }
+
+        if input != Vec2::ZERO {
+            local_vel.0 = input * max_speed.0;
         } else {
-            speed.0 *= DECELERATION_FACTOR;
-            // Clamp near-zero to zero
-            if speed.0.abs() < 0.1 {
-                speed.0 = 0.0;
+            local_vel.0 *= DECELERATION_FACTOR;
+            if local_vel.0.length() < 0.1 {
+                local_vel.0 = Vec2::ZERO;
             }
         }
+
+        // Convert ship-local velocity (x=right, y=forward) to world space.
+        let forward = (*transform.local_y()).truncate();
+        let right = (*transform.local_x()).truncate();
+        let world_vel = forward * local_vel.0.y + right * local_vel.0.x;
+        velocity.0 = world_vel.extend(0.0);
+        // Keep Speed.0 as the forward-axis scalar so evasion (which scales
+        // with forward speed) behaves the same as before the rework.
+        speed.0 = local_vel.0.y;
+    }
+}
+
+/// Smoothly rotates the ship to face the world-space cursor. Turn rate is
+/// capped by `MaxTurnSpeed` (which engine power scales), so the ship feels
+/// heavier with low engine power and snappier with high.
+pub fn player_aim_at_cursor(
+    paused: Res<GamePaused>,
+    cursor: Res<CursorWorldPos>,
+    dt: Res<GameTimeDelta>,
+    mut query: Query<(&Transform, &Heading, &MaxTurnSpeed, &mut TurnSpeed), With<Player>>,
+) {
+    if paused.0 {
+        return;
+    }
+    let Some(cursor_pos) = cursor.0 else {
+        for (_, _, _, mut ts) in query.iter_mut() {
+            ts.radians_per_second = 0.0;
+        }
+        return;
+    };
+    for (transform, heading, max_turn, mut turn_speed) in query.iter_mut() {
+        let to_cursor = cursor_pos - transform.translation.truncate();
+        if to_cursor.length() < AIM_DEADZONE_RADIUS {
+            turn_speed.radians_per_second = 0.0;
+            continue;
+        }
+        let target = math_util::get_heading_to_point(to_cursor.extend(0.0));
+        let delta = math_util::get_angle_difference(target, heading.radians);
+        // Pick the rate that lands on the target this tick if possible,
+        // otherwise saturate to MaxTurnSpeed.
+        let desired = if dt.0 > 0.0 { delta / dt.0 } else { 0.0 };
+        let max = max_turn.radians_per_second;
+        turn_speed.radians_per_second = desired.clamp(-max, max);
     }
 }
 
@@ -189,17 +246,20 @@ pub fn player_lock_target_input(
 }
 
 /// Clears PlayerTarget (and the player's Target component) when the locked
-/// entity no longer exists. Without this, the stale lock causes targeted
-/// firing logic to skip every tick with "target gone" forever.
+/// entity no longer exists OR has entered the dying state. Without the
+/// despawn check, a stale lock causes targeted firing logic to skip every
+/// tick forever; without the dying check, the lock ring keeps tracking a
+/// wreck while it explodes — visually confusing.
 pub fn clear_dead_target_lock(
     mut player_target: ResMut<PlayerTarget>,
     transforms: Query<&GlobalTransform>,
+    dieing: Query<(), With<Dieing>>,
     mut player_query: Query<&mut Target, With<Player>>,
 ) {
     let Some(target) = player_target.0 else {
         return;
     };
-    if transforms.get(target).is_err() {
+    if transforms.get(target).is_err() || dieing.get(target).is_ok() {
         player_target.0 = None;
         for mut t in player_query.iter_mut() {
             t.0 = None;

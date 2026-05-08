@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use super::mortal::Dieing;
+
 #[derive(Clone, Copy, Component)]
 #[derive(Default)]
 pub struct Target(pub Option<Entity>);
@@ -19,6 +21,25 @@ pub fn copy_targets_from_parents(
         };
         if let Ok(mut my_target) = targetter_query.get_mut(entity) {
             my_target.0 = parent_target;
+        }
+    }
+}
+
+/// Nulls any `Target.0` that references an entity which has entered the
+/// `Dieing` state. Runs after `copy_targets_from_parents` so children inherit
+/// the cleared value from their parent the next tick. Without this, AI ships
+/// and player turrets keep firing at a wreck for the rest of its death-throes
+/// window — which is just confusing, even if `apply_damage` already filters
+/// out further damage.
+pub fn clear_targets_pointing_at_dieing(
+    mut targetters: Query<&mut Target>,
+    dieing: Query<(), With<Dieing>>,
+) {
+    for mut target in targetters.iter_mut() {
+        if let Some(e) = target.0 {
+            if dieing.get(e).is_ok() {
+                target.0 = None;
+            }
         }
     }
 }

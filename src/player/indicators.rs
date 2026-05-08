@@ -3,6 +3,7 @@
 use bevy::prelude::*;
 use bevy::sprite_render::{ColorMaterial, MeshMaterial2d};
 
+use crate::combat::mortal::Dieing;
 use crate::combat::projectile::CircularHitBox;
 use crate::combat::Team;
 
@@ -81,7 +82,7 @@ fn update_hovered_entity(
     camera_q: Query<(&Camera, &GlobalTransform)>,
     targetable: Query<
         (Entity, &GlobalTransform, &CircularHitBox),
-        (With<Team>, Without<Player>),
+        (With<Team>, Without<Player>, Without<Dieing>),
     >,
     mut hovered: ResMut<HoveredEntity>,
 ) {

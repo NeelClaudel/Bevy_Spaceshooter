@@ -6,6 +6,7 @@ pub mod damage_flash;
 pub mod death;
 pub mod muzzle;
 pub mod starfield;
+pub mod thruster;
 
 use bevy::prelude::*;
 use rand::Rng;

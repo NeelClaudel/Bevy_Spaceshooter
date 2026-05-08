@@ -24,8 +24,8 @@ use crate::{
 use super::constants::player_ship::*;
 use super::constants::weapons::*;
 use super::{
-    Ammunition, BallisticConfig, Player, PlayerBaseStats, PlayerWeapon, PlayerWeaponGroup,
-    ShipReactor, WeaponEnabled, WeaponName, WeaponSlot,
+    Ammunition, BallisticConfig, Player, PlayerBaseStats, PlayerLocalVelocity, PlayerWeapon,
+    PlayerWeaponGroup, ShipReactor, WeaponEnabled, WeaponName, WeaponSlot,
 };
 use super::constants::energy::REACTOR_MAX_POWER;
 
@@ -264,6 +264,7 @@ impl SpawnShipTemplate for PlayerShipSpawner {
                 thrust: Thrust(PLAYER_THRUST),
                 ..default()
             })
+            .insert(PlayerLocalVelocity::default())
             // NO AI components (no IdleBehavior, TurnToDestinationBehavior, etc.)
             .insert((
                 Target::default(),
@@ -307,8 +308,8 @@ impl PlayerShipTemplatePlugin {
         mut meshes: ResMut<Assets<Mesh>>,
     ) {
         let resources = PlayerShipResources {
-            color_texture: assets.load("spaceships_no_bloom/16.png"),
-            mask_texture: assets.load("spaceships_no_bloom/16.png"),
+            color_texture: assets.load("spaceships_no_bloom/11.png"),
+            mask_texture: assets.load("spaceships_no_bloom/11.png"),
             mesh: meshes
                 .add(Mesh::from(Rectangle::new(64.0, 64.0))),
         };

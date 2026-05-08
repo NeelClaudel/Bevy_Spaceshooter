@@ -31,6 +31,7 @@ impl Plugin for CombatPlugin {
             (
                 tools::update_cooldowns,
                 targets::copy_targets_from_parents,
+                targets::clear_targets_pointing_at_dieing,
                 (
                     (
                         (tools::fire_targetted_tools, tools::tools_activate_effectors).chain(),

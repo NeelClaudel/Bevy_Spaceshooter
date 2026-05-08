@@ -82,6 +82,12 @@ pub struct WeaponName(pub &'static str);
 #[derive(Component, Copy, Clone)]
 pub struct WeaponEnabled(pub bool);
 
+/// Ship-local 2D velocity for the player: x = strafe (right positive),
+/// y = thrust (forward positive). Persisted across ticks so deceleration can
+/// taper smoothly when no input is held.
+#[derive(Component, Default, Copy, Clone)]
+pub struct PlayerLocalVelocity(pub Vec2);
+
 /// Ammunition for weapons that consume ammo (e.g. missiles).
 #[derive(Component)]
 pub struct Ammunition {
@@ -203,7 +209,6 @@ impl Plugin for PlayerPlugin {
             Update,
             (
                 (
-                    input::player_movement_input,
                     input::player_pause_input,
                     input::player_speed_input,
                     input::player_zoom_input,
@@ -217,6 +222,16 @@ impl Plugin for PlayerPlugin {
                     input::clear_dead_target_lock,
                 ),
             ),
+        );
+
+        // Movement and aim run on the fixed tick, before MovementSystems
+        // consumes Velocity / TurnSpeed. Aim writes TurnSpeed for
+        // update_heading; movement writes Velocity directly (player is
+        // filtered out of the generic update_velocity).
+        app.add_systems(
+            FixedUpdate,
+            (input::player_aim_at_cursor, input::player_movement_input)
+                .before(crate::movement::MovementSystems),
         );
 
         // Camera follow (PostUpdate, after transform propagation)

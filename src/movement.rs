@@ -47,7 +47,9 @@ pub struct MovementBundle {
     pub heading: Heading,
 }
 
-fn update_velocity(mut query: Query<(&Speed, &Transform, &mut Velocity)>) {
+fn update_velocity(
+    mut query: Query<(&Speed, &Transform, &mut Velocity), Without<crate::player::Player>>,
+) {
     for (speed, transform, mut velocity) in query.iter_mut() {
         velocity.0 = speed.0 * *transform.local_y();
     }

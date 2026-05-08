@@ -3,6 +3,9 @@
 // --- Movement ---
 pub const DECELERATION_FACTOR: f32 = 0.98;
 pub const REVERSE_SPEED_FRACTION: f32 = 0.3;
+/// Cursor radius (world units) inside which aim is suppressed so the ship
+/// doesn't spin when the cursor is on top of it.
+pub const AIM_DEADZONE_RADIUS: f32 = 8.0;
 
 // --- Camera ---
 pub const CAMERA_FOLLOW_LERP: f32 = 0.1;

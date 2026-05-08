@@ -5,4 +5,5 @@ pub mod controls;
 pub mod energy;
 pub mod hud;
 pub mod player_ship;
+pub mod thrusters;
 pub mod weapons;

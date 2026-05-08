@@ -79,7 +79,7 @@ pub fn do_retargetting(
     }
 }
 
-use crate::combat::{mortal::{Health, MaxHealth}, Team};
+use crate::combat::{mortal::{Dieing, Health, MaxHealth}, Team};
 use multimap::MultiMap;
 
 pub const HASH_CELL_SIZE : f32 = 50.0;
@@ -145,13 +145,13 @@ fn get_cell_coordinates(position: Vec3) -> (i32, i32) {
 
 pub fn find_targets(
     target_query: Query<(
-    Entity,
-    &GlobalTransform,
-    &Team,
-    &AgentCategory,
-    &Health,
-    &MaxHealth
-    )>,
+        Entity,
+        &GlobalTransform,
+        &Team,
+        &AgentCategory,
+        &Health,
+        &MaxHealth,
+    ), Without<Dieing>>,
     mut targetter_query: Query<(
         &AggroLocation,
         &AggroRadius,
